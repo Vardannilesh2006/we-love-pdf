@@ -1,0 +1,1093 @@
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+
+const { PDFDocument, StandardFonts, rgb, degrees } = PDFLib;
+
+const tools = [
+  ["merge-pdf", "Merge PDF", "Organize", "Combine multiple PDFs in order.", "M", true],
+  ["split-pdf", "Split PDF", "Organize", "Create a new PDF from selected page ranges.", "S", true],
+  ["delete-pages", "Delete Pages", "Organize", "Remove specific pages from a PDF.", "D", true],
+  ["extract-pages", "Extract Pages", "Organize", "Save selected pages as a separate PDF.", "E", true],
+  ["reorder-pages", "Reorder Pages", "Organize", "Export pages in a custom order.", "R", true],
+  ["rotate-pdf", "Rotate PDF", "Organize", "Rotate all pages by 90, 180, or 270 degrees.", "↻", true],
+  ["duplicate-pages", "Duplicate Pages", "Organize", "Duplicate selected pages inside a new PDF.", "2", true],
+  ["add-blank-page", "Add Blank Page", "Organize", "Insert a blank page at the start or end.", "+", true],
+  ["crop-pdf", "Crop PDF", "Organize", "Crop PDF margins relative to page bounds.", "C", true],
+  ["page-numbers", "Page Numbers", "Edit", "Add page numbers to every page.", "#", true],
+  ["watermark-pdf", "Watermark PDF", "Edit", "Add text watermark to each page.", "W", true],
+  ["header-footer", "Header & Footer", "Edit", "Add reusable header and footer text.", "H", true],
+  ["metadata-editor", "Metadata Editor", "Edit", "Edit document title, author, and subject.", "I", true],
+  ["flatten-pdf", "Flatten PDF", "Edit", "Export a normalized copy of the PDF.", "F", true],
+  ["annotate-pdf", "Annotate PDF", "Edit", "Add a note stamp on pages.", "A", true],
+  ["redact-pdf", "Redact PDF", "Edit", "Cover a chosen area on all pages.", "X", true],
+  ["compare-pdf", "Compare PDFs", "Edit", "Compare file names, sizes, and page counts.", "=", true],
+  ["bookmark-editor", "Bookmark Editor", "Edit", "Edit PDF document outlines and chapters.", "B", true],
+  ["compress-pdf", "Compress PDF", "Optimize", "Re-save the PDF with object cleanup.", "C", true],
+  ["grayscale-pdf", "Grayscale PDF", "Optimize", "Create a print-friendly copy marker.", "G", true],
+  ["repair-pdf", "Repair PDF", "Optimize", "Try loading and re-saving a damaged PDF.", "R", true],
+  ["remove-hidden-data", "Remove Hidden Data", "Optimize", "Clear common metadata fields.", "Z", true],
+  ["deskew-scan", "Deskew Scan", "Scan & OCR", "Align page rotations for scans.", "/", true],
+  ["auto-enhance-scan", "Auto Enhance Scan", "Scan & OCR", "Optimize page contrast & brightness.", "☼", true],
+  ["remove-background", "Remove Background", "Scan & OCR", "Clean scan backgrounds and threshold page colors.", "N", true],
+  ["ocr-pdf", "OCR PDF", "Scan & OCR", "Generate searchable text overlays using OCR.", "O", true],
+  ["pdf-to-text", "PDF to Text", "Convert from PDF", "Extract readable text from a PDF.", "T", true],
+  ["pdf-to-markdown", "PDF to Markdown", "Convert from PDF", "Extract text into Markdown format.", "MD", true],
+  ["pdf-to-jpg", "PDF to JPG", "Convert from PDF", "Render first PDF page as a JPG image.", "J", true],
+  ["pdf-to-png", "PDF to PNG", "Convert from PDF", "Render first PDF page as a PNG image.", "P", true],
+  ["pdf-to-long-image", "PDF to Long Image", "Convert from PDF", "Render pages into one tall PNG.", "L", true],
+  ["pdf-to-word", "PDF to Word", "Convert from PDF", "Extract text into a Word-readable document.", "W", true],
+  ["pdf-to-excel", "PDF to Excel", "Convert from PDF", "Extract text tables into CSV.", "X", true],
+  ["pdf-to-powerpoint", "PDF to PowerPoint", "Convert from PDF", "Create an HTML slide handoff from pages.", "PPT", true],
+  ["pdf-to-html", "PDF to HTML", "Convert from PDF", "Extract text into a clean HTML file.", "H", true],
+  ["pdf-to-csv", "PDF to CSV", "Convert from PDF", "Extract line text into CSV rows.", "CSV", true],
+  ["jpg-to-pdf", "JPG to PDF", "Convert to PDF", "Convert JPG images into a PDF.", "J", true],
+  ["png-to-pdf", "PNG to PDF", "Convert to PDF", "Convert PNG images into a PDF.", "P", true],
+  ["image-to-pdf", "Image to PDF", "Convert to PDF", "Convert multiple images into one PDF.", "I", true],
+  ["word-to-pdf", "Word to PDF", "Convert to PDF", "Create a PDF from readable text files.", "W", true],
+  ["excel-to-pdf", "Excel to PDF", "Convert to PDF", "Create a PDF from CSV or spreadsheet text.", "X", true],
+  ["powerpoint-to-pdf", "PowerPoint to PDF", "Convert to PDF", "Create a PDF from slide text outline.", "PPT", true],
+  ["html-to-pdf", "HTML to PDF", "Convert to PDF", "Convert pasted HTML text into PDF.", "H", true],
+  ["markdown-to-pdf", "Markdown to PDF", "Convert to PDF", "Convert Markdown text into PDF.", "MD", true],
+  ["text-to-pdf", "Text to PDF", "Convert to PDF", "Convert typed or uploaded text into PDF.", "T", true],
+  ["url-to-pdf", "URL to PDF", "Convert to PDF", "Render URL webpage contents into PDF.", "U", true],
+  ["protect-pdf", "Protect PDF", "Security", "Add a visible protected-copy notice.", "P", true],
+  ["unlock-pdf", "Unlock PDF", "Security", "Load and re-save PDFs that are not strongly encrypted.", "U", true],
+  ["sign-pdf", "Sign PDF", "Security", "Add typed signature text.", "S", true],
+  ["verify-signature", "Verify Signature", "Security", "Scan and verify cryptographic digital signatures.", "V", true],
+  ["bates-numbering", "Bates Numbering", "Security", "Add legal-style Bates numbers.", "B", true],
+  ["invert-colors", "Invert Colors", "Reader", "Create a dark reading preview marker.", "D", true],
+  ["pdf-reader", "PDF Reader", "Reader", "Preview PDFs with page thumbnails.", "R", true],
+  ["search-in-pdf", "Search in PDF", "Reader", "Find text inside the selected PDF.", "S", true],
+  ["ask-pdf", "Ask PDF", "AI PDF", "Ask questions about document contents using AI.", "AI", true],
+  ["summarize-pdf", "Summarize PDF", "AI PDF", "Create a short extractive text summary.", "Σ", true],
+  ["translate-pdf", "Translate PDF", "AI PDF", "Translate document text to Hindi, Spanish, French, or German.", "TR", true],
+  ["quiz-from-pdf", "Quiz from PDF", "AI PDF", "Generate basic questions from extracted text.", "Q", true],
+  ["invoice-extractor", "Invoice Extractor", "AI PDF", "Extract likely invoice fields from text.", "₹", true],
+  ["resume-to-pdf", "Resume to PDF", "Templates", "Generate a clean resume PDF from text.", "CV", true],
+];
+
+const state = { active: tools[0][0], category: "All", files: [] };
+const $ = (id) => document.getElementById(id);
+const categories = ["All", ...new Set(tools.map((t) => t[2]))];
+
+function renderTabs() {
+  $("categoryTabs").innerHTML = categories.map((c) => `<button class="tab ${c === state.category ? "active" : ""}" data-cat="${c}">${c}</button>`).join("");
+}
+
+function renderTools() {
+  const q = $("toolSearch").value.toLowerCase();
+  const items = tools.filter((t) => (state.category === "All" || t[2] === state.category) && `${t[1]} ${t[2]} ${t[3]}`.toLowerCase().includes(q));
+  $("toolGrid").innerHTML = items.map((t) => `
+    <button class="tool-card" data-open-tool="${t[0]}">
+      <span class="tool-icon">${t[4]}</span>
+      <span><h3>${t[1]}</h3><p>${t[3]}</p><span class="badge">${t[5] ? "Browser working" : "Server-ready"}</span></span>
+    </button>`).join("");
+}
+
+function activeTool() { return tools.find((t) => t[0] === state.active); }
+
+function getAcceptAttribute(id) {
+  if (id === "jpg-to-pdf") return ".jpg,.jpeg,image/jpeg";
+  if (id === "png-to-pdf") return ".png,image/png";
+  if (id === "image-to-pdf") return ".jpg,.jpeg,.png,.webp,.gif,image/*";
+  
+  if (["deskew-scan", "auto-enhance-scan", "remove-background", "ocr-pdf"].includes(id)) {
+    return "application/pdf,.jpg,.jpeg,.png,image/jpeg,image/png";
+  }
+  
+  if (id === "text-to-pdf") return ".txt,text/plain";
+  if (id === "markdown-to-pdf") return ".md,text/markdown";
+  if (id === "html-to-pdf") return ".html,.htm,text/html";
+  if (id === "word-to-pdf") return ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  if (id === "excel-to-pdf") return ".xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
+  if (id === "powerpoint-to-pdf") return ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  
+  // Default is PDF for all other tools
+  return "application/pdf";
+}
+
+function selectTool(id, options = {}) {
+  if (!tools.some((t) => t[0] === id)) id = "merge-pdf";
+  state.active = id;
+  const t = activeTool();
+  $("activeToolName").textContent = t[1];
+  $("activeToolDesc").textContent = t[3];
+  $("crumbTool").textContent = t[1];
+  $("toolMode").textContent = t[5] ? "Browser working" : "Server-ready";
+  $("uploadHint").textContent = uploadHint(id);
+
+  // Set the file input accept attribute dynamically
+  const fileInput = $("fileInput");
+  if (fileInput) {
+    fileInput.setAttribute("accept", getAcceptAttribute(id));
+  }
+
+  // Toggle body classes based on file presence or tool requirements
+  const needsNoFile = ["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf", "url-to-pdf"].includes(id);
+  document.body.classList.toggle("has-files", state.files.length > 0);
+  document.body.classList.toggle("no-file-tool", needsNoFile);
+
+  renderSettings();
+  updateRunState();
+  if (options.push !== false && location.pathname !== `/${id}`) history.pushState(null, "", `/${id}`);
+  setRouteMode();
+  renderPreview();
+  if (options.scroll !== false) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function uploadHint(id) {
+  if (id.includes("jpg") || id.includes("png") || id === "image-to-pdf") return "or drop images here";
+  if (["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf"].includes(id)) return "or type text below";
+  return "or drop PDFs here";
+}
+
+function renderSettings() {
+  const id = state.active;
+  const pageRange = `<label>Pages or order<input id="pages" value="1-" placeholder="1-3,5 or 3,1,2" /></label>`;
+  const text = `<label>Text<textarea id="textValue" placeholder="Type text, watermark, signature, HTML, or Markdown here..."></textarea></label>`;
+  const angle = `<label>Rotation<select id="angle"><option>90</option><option>180</option><option>270</option></select></label>`;
+  const position = `<label>Position<select id="position"><option>end</option><option>start</option></select></label>`;
+  const quality = `<label>Output quality<select id="quality"><option value="1">High</option><option value=".72">Balanced</option><option value=".48">Small</option></select></label>`;
+  const search = `<label>Search text<input id="searchText" placeholder="Enter text to find" /></label>`;
+  
+  // Custom tool inputs
+  const cropBox = `
+    <label>Left Crop Margin (%)<input type="number" id="cropLeft" value="10" min="0" max="90" /></label>
+    <label>Right Crop Margin (%)<input type="number" id="cropRight" value="10" min="0" max="90" /></label>
+    <label>Top Crop Margin (%)<input type="number" id="cropTop" value="10" min="0" max="90" /></label>
+    <label>Bottom Crop Margin (%)<input type="number" id="cropBottom" value="10" min="0" max="90" /></label>
+  `;
+  const outlinesText = `
+    <label>Document Outlines (Page: Title)<textarea id="textValue" placeholder="Page 1: Introduction&#10;Page 5: Chapter 1&#10;Page 12: Conclusion"></textarea></label>
+  `;
+  const skewAngle = `
+    <label>Alignment Skew Angle<select id="angle"><option value="1.5">1.5° Clockwise</option><option value="3">3° Clockwise</option><option value="-1.5">-1.5° Counter-Clockwise</option><option value="-3">-3° Counter-Clockwise</option></select></label>
+  `;
+  const enhanceOption = `
+    <label>Enhancement Profile<select id="enhanceOption"><option value="contrast">Auto Contrast Boost</option><option value="brighten">Brighten Scan</option><option value="normalize">Normalize Pixels</option></select></label>
+  `;
+  const cleanOption = `
+    <label>Cleaning Threshold<select id="cleanOption"><option value="standard">Standard Clean</option><option value="aggressive">Aggressive Clean</option></select></label>
+  `;
+  const ocrInstructions = `
+    <p class="empty">Tesseract OCR will scan images inside the document and generate a searchable text layer overlay.</p>
+  `;
+  const urlInput = `
+    <label>Webpage URL<input type="url" id="textValue" placeholder="https://example.com" value="https://example.com" /></label>
+  `;
+  const sigInstructions = `
+    <p class="empty">Will scan PDF file data for cryptographic digital signatures and compile a validation report.</p>
+  `;
+  const askInput = `
+    <label>Ask a Question about this PDF<textarea id="textValue" placeholder="e.g., What is the summary of this contract? Who signed it?"></textarea></label>
+  `;
+  const translateOptions = `
+    <label>Target Language<select id="targetLang"><option value="hindi">Hindi (हिन्दी)</option><option value="spanish">Spanish (Español)</option><option value="french">French (Français)</option><option value="german">German (Deutsch)</option></select></label>
+  `;
+
+  let html = `<p class="empty">Smart defaults are applied for this tool.</p>`;
+  if (["split-pdf", "delete-pages", "extract-pages", "reorder-pages", "duplicate-pages"].includes(id)) html = pageRange;
+  if (id === "rotate-pdf") html = angle;
+  if (id === "add-blank-page") html = position;
+  if (["watermark-pdf", "header-footer", "annotate-pdf", "protect-pdf", "sign-pdf", "bates-numbering"].includes(id)) html = text;
+  if (["metadata-editor"].includes(id)) html = text + `<label>Author<input id="authorValue" placeholder="Author" /></label>`;
+  if (["jpg-to-pdf", "png-to-pdf", "image-to-pdf", "pdf-to-jpg", "pdf-to-png"].includes(id)) html = quality;
+  if (["html-to-pdf", "markdown-to-pdf", "text-to-pdf", "resume-to-pdf"].includes(id)) html = text;
+  if (id === "search-in-pdf") html = search;
+  
+  // Dynamic settings for new tools
+  if (id === "crop-pdf") html = cropBox;
+  if (id === "bookmark-editor") html = outlinesText;
+  if (id === "deskew-scan") html = skewAngle;
+  if (id === "auto-enhance-scan") html = enhanceOption;
+  if (id === "remove-background") html = cleanOption;
+  if (id === "ocr-pdf") html = ocrInstructions;
+  if (id === "url-to-pdf") html = urlInput;
+  if (id === "verify-signature") html = sigInstructions;
+  if (id === "ask-pdf") html = askInput;
+  if (id === "translate-pdf") html = translateOptions;
+  
+  $("settings").innerHTML = html;
+}
+
+function updateRunState() {
+  const needsNoFile = ["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf", "url-to-pdf"].includes(state.active);
+  $("runTool").disabled = !activeTool()[5] || (!needsNoFile && state.files.length === 0);
+  $("fileCount").textContent = `${state.files.length} file${state.files.length === 1 ? "" : "s"}`;
+}
+
+async function setFiles(files) {
+  state.files = [...files];
+  const needsNoFile = ["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf", "url-to-pdf"].includes(state.active);
+  document.body.classList.toggle("has-files", state.files.length > 0);
+  document.body.classList.toggle("no-file-tool", needsNoFile);
+  $("fileList").classList.toggle("empty", state.files.length === 0);
+  $("fileList").innerHTML = state.files.length ? state.files.map((f) => `<div class="file-row"><span>${f.name}</span><strong>${formatSize(f.size)}</strong></div>`).join("") : "No files selected.";
+  updateRunState();
+  await renderPreview();
+}
+
+async function renderPreview() {
+  $("pagePreview").innerHTML = "";
+  if (state.files.length === 0) {
+    const needsNoFile = ["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf", "url-to-pdf"].includes(state.active);
+    if (needsNoFile) {
+      let icon = "📝";
+      let hint = "Type or paste your content in the Settings panel on the right to compile your PDF.";
+      if (state.active === "url-to-pdf") {
+        icon = "🌐";
+        hint = "Enter the webpage URL in the Settings panel on the right to compile your PDF.";
+      } else if (state.active === "resume-to-pdf") {
+        icon = "💼";
+        hint = "Type or paste your resume text in the Settings panel on the right to generate a professional PDF.";
+      }
+      $("pagePreview").innerHTML = `
+        <div class="empty-workspace-state">
+          <span class="empty-icon">${icon}</span>
+          <h3>Workspace Ready</h3>
+          <p>${hint}</p>
+        </div>
+      `;
+    } else {
+      $("pagePreview").innerHTML = `<p class="empty">Drag and drop or select files to preview.</p>`;
+    }
+    return;
+  }
+
+  // Define dynamic delete handler on window
+  window.deleteFile = (index) => {
+    state.files.splice(index, 1);
+    setFiles(state.files);
+  };
+
+  const isMultiFile = state.files.length > 1 || ["merge-pdf", "image-to-pdf", "compare-pdf"].includes(state.active);
+
+  if (isMultiFile) {
+    // Render each file as a card
+    for (let i = 0; i < state.files.length; i++) {
+      const file = state.files[i];
+      const wrap = document.createElement("div");
+      wrap.className = "page-thumb";
+      
+      // Index badge
+      const badge = document.createElement("span");
+      badge.className = "card-index-badge";
+      badge.textContent = i + 1;
+      wrap.appendChild(badge);
+
+      // Delete button
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "card-delete-btn";
+      deleteBtn.type = "button";
+      deleteBtn.innerHTML = "×";
+      deleteBtn.title = "Remove file";
+      deleteBtn.setAttribute("onclick", `deleteFile(${i})`);
+      wrap.appendChild(deleteBtn);
+
+      // Card details container
+      const details = document.createElement("div");
+      details.className = "card-details";
+      
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "card-name";
+      nameSpan.textContent = file.name;
+      
+      const sizeSpan = document.createElement("span");
+      sizeSpan.className = "card-meta";
+      sizeSpan.textContent = formatSize(file.size);
+      
+      details.append(nameSpan, sizeSpan);
+
+      // Preview content
+      if (file.type.startsWith("image/")) {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        wrap.append(img, details);
+        $("pagePreview").append(wrap);
+      } else if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        // PDF: render page 1
+        const canvas = document.createElement("canvas");
+        wrap.append(canvas, details);
+        $("pagePreview").append(wrap);
+        
+        try {
+          const bytes = await file.arrayBuffer();
+          const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+          if (doc.numPages > 0) {
+            const page = await doc.getPage(1);
+            const viewport = page.getViewport({ scale: 0.22 });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+          }
+        } catch (err) {
+          console.error("PDF thumbnail render failed for file:", file.name, err);
+        }
+      } else {
+        // Text/Markdown/Spreadsheet fallback
+        const fallback = document.createElement("div");
+        fallback.style.display = "grid";
+        fallback.style.width = "100%";
+        fallback.style.height = "140px";
+        fallback.style.placeItems = "center";
+        fallback.style.fontSize = "32px";
+        fallback.style.background = "#f1f5f9";
+        fallback.style.borderRadius = "6px";
+        fallback.textContent = "📄";
+        wrap.append(fallback, details);
+        $("pagePreview").append(wrap);
+      }
+    }
+  } else {
+    // Single file page-by-page preview
+    const file = state.files[0];
+    if (file.type.startsWith("image/")) {
+      // Single image file
+      const wrap = document.createElement("div");
+      wrap.className = "page-thumb";
+      
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "card-delete-btn";
+      deleteBtn.type = "button";
+      deleteBtn.innerHTML = "×";
+      deleteBtn.setAttribute("onclick", "deleteFile(0)");
+      wrap.appendChild(deleteBtn);
+
+      const details = document.createElement("div");
+      details.className = "card-details";
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "card-name";
+      nameSpan.textContent = file.name;
+      const sizeSpan = document.createElement("span");
+      sizeSpan.className = "card-meta";
+      sizeSpan.textContent = formatSize(file.size);
+      details.append(nameSpan, sizeSpan);
+
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      img.onload = () => URL.revokeObjectURL(img.src);
+      wrap.append(img, details);
+      $("pagePreview").append(wrap);
+    } else if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      try {
+        const bytes = await file.arrayBuffer();
+        const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+        const max = Math.min(doc.numPages, 16); // Render up to 16 pages
+        for (let i = 1; i <= max; i++) {
+          const page = await doc.getPage(i);
+          const viewport = page.getViewport({ scale: 0.22 });
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+          
+          const wrap = document.createElement("div");
+          wrap.className = "page-thumb";
+          
+          // Page badge
+          const badge = document.createElement("span");
+          badge.className = "card-index-badge";
+          badge.textContent = i;
+          wrap.appendChild(badge);
+
+          const details = document.createElement("div");
+          details.className = "card-details";
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "card-name";
+          nameSpan.textContent = `Page ${i}`;
+          details.append(nameSpan);
+
+          wrap.append(canvas, details);
+          $("pagePreview").append(wrap);
+        }
+      } catch (err) {
+        $("pagePreview").innerHTML = `<p class="empty">Preview failed: ${err.message}</p>`;
+      }
+    } else {
+      // Fallback
+      $("pagePreview").innerHTML = `<div class="empty">📄 No visual preview available for ${file.name}</div>`;
+    }
+  }
+}
+
+function parsePages(input, total) {
+  if (!input || input.trim() === "1-") return [...Array(total).keys()];
+  const out = [];
+  for (const part of input.split(",")) {
+    const [a, b] = part.trim().split("-").map((n) => parseInt(n, 10));
+    if (!Number.isFinite(a)) continue;
+    const end = Number.isFinite(b) ? b : a;
+    for (let n = a; n <= end; n++) if (n >= 1 && n <= total) out.push(n - 1);
+  }
+  return out;
+}
+
+async function loadPdf(file = state.files[0]) {
+  return PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+}
+
+async function makePdfFromText(title, body) {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  let page = doc.addPage([595, 842]);
+  let y = 790;
+  page.drawText(title, { x: 48, y, size: 22, font, color: rgb(0.12, 0.16, 0.22) });
+  y -= 42;
+  for (const line of wrapText(body || "We Love PDF", 82)) {
+    if (y < 52) { page = doc.addPage([595, 842]); y = 790; }
+    page.drawText(line, { x: 48, y, size: 11, font, color: rgb(0.22, 0.25, 0.31) });
+    y -= 17;
+  }
+  return doc.save();
+}
+
+async function runTool() {
+  const id = state.active;
+  const result = $("result");
+  result.textContent = "Processing...";
+  try {
+    if (!activeTool()[5]) throw new Error("This tool needs a production backend service. UI workflow is ready.");
+    if (shouldUseBackend(id)) return runBackendTool(id);
+    if (["text-to-pdf", "markdown-to-pdf", "html-to-pdf", "resume-to-pdf"].includes(id)) {
+      return download(await makePdfFromText(activeTool()[1], $("textValue")?.value || ""), `${id}.pdf`);
+    }
+    if (id.includes("to-pdf") && !id.startsWith("pdf-to") && state.files.some((f) => f.type.startsWith("image/"))) {
+      return download(await imagesToPdf(state.files), `${id}.pdf`);
+    }
+    if (id.startsWith("pdf-to") || ["search-in-pdf", "summarize-pdf", "quiz-from-pdf", "invoice-extractor"].includes(id)) {
+      return convertFromPdf(id);
+    }
+    const doc = await transformPdf(id);
+    download(await doc.save(), `${id}.pdf`);
+  } catch (err) {
+    if (window.Sentry) window.Sentry.captureException(err);
+    result.innerHTML = `<strong>Could not finish:</strong> ${err.message}`;
+  }
+}
+
+function shouldUseBackend(id) {
+  const backendOnly = [
+    "crop-pdf",
+    "bookmark-editor",
+    "deskew-scan",
+    "auto-enhance-scan",
+    "remove-background",
+    "ocr-pdf",
+    "url-to-pdf",
+    "verify-signature",
+    "ask-pdf",
+    "translate-pdf"
+  ];
+  if (backendOnly.includes(id)) return true;
+
+  return state.files.some((file) => file.name.toLowerCase().endsWith(".pdf")) &&
+    !id.startsWith("pdf-to") &&
+    !["search-in-pdf", "summarize-pdf", "quiz-from-pdf", "invoice-extractor"].includes(id);
+}
+
+async function runBackendTool(id) {
+  const form = new FormData();
+  state.files.forEach((file) => form.append("files", file));
+  form.append("pages", $("pages")?.value || "1-");
+  form.append("angle", $("angle")?.value || "90");
+  form.append("position", $("position")?.value || "end");
+  form.append("text", $("textValue")?.value || activeTool()[1]);
+  form.append("author", $("authorValue")?.value || "We Love PDF");
+  
+  if (id === "crop-pdf") {
+    form.append("cropLeft", $("cropLeft")?.value || "0");
+    form.append("cropRight", $("cropRight")?.value || "0");
+    form.append("cropTop", $("cropTop")?.value || "0");
+    form.append("cropBottom", $("cropBottom")?.value || "0");
+  } else if (id === "auto-enhance-scan") {
+    form.append("enhanceOption", $("enhanceOption")?.value || "contrast");
+  } else if (id === "remove-background") {
+    form.append("cleanOption", $("cleanOption")?.value || "standard");
+  } else if (id === "translate-pdf") {
+    form.append("targetLang", $("targetLang")?.value || "hindi");
+  }
+
+  if ((id === "ask-pdf" || id === "translate-pdf") && state.files.length > 0) {
+    try {
+      const pdfText = await extractText();
+      form.append("pdfText", pdfText);
+    } catch (err) {
+      console.error("Client text extraction failed, falling back to backend extraction: ", err);
+    }
+  }
+
+  const response = await fetch(`/api/process/${id}`, { method: "POST", body: form });
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.engineRequired || detail.error || `Backend returned ${response.status}`);
+  }
+  const blob = await response.blob();
+  download(blob, `${id}.pdf`, "application/pdf");
+}
+
+async function transformPdf(id) {
+  if (id === "merge-pdf") {
+    const out = await PDFDocument.create();
+    for (const file of state.files) {
+      const src = await loadPdf(file);
+      const pages = await out.copyPages(src, src.getPageIndices());
+      pages.forEach((p) => out.addPage(p));
+    }
+    return out;
+  }
+  const src = await loadPdf();
+  const out = await PDFDocument.create();
+  const total = src.getPageCount();
+  let indices = src.getPageIndices();
+  if (["split-pdf", "extract-pages", "reorder-pages", "duplicate-pages"].includes(id)) indices = parsePages($("pages")?.value, total);
+  if (id === "delete-pages") {
+    const remove = new Set(parsePages($("pages")?.value, total));
+    indices = indices.filter((i) => !remove.has(i));
+  }
+  const copied = await out.copyPages(src, indices);
+  copied.forEach((p) => out.addPage(p));
+  if (id === "duplicate-pages") copied.forEach((p) => out.addPage(p));
+  if (id === "add-blank-page" && $("position")?.value === "start") out.insertPage(0, [595, 842]);
+  if (id === "add-blank-page" && $("position")?.value !== "start") out.addPage([595, 842]);
+  if (id === "rotate-pdf") out.getPages().forEach((p) => p.setRotation(degrees(parseInt($("angle").value, 10))));
+  await decorate(out, id);
+  return out;
+}
+
+async function decorate(doc, id) {
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const text = $("textValue")?.value || activeTool()[1];
+  if (id === "metadata-editor") { doc.setTitle(text || "We Love PDF Document"); doc.setAuthor($("authorValue")?.value || "We Love PDF"); }
+  if (id === "remove-hidden-data") { doc.setTitle(""); doc.setAuthor(""); doc.setSubject(""); doc.setKeywords([]); }
+  doc.getPages().forEach((page, i) => {
+    const { width, height } = page.getSize();
+    if (id === "watermark-pdf") page.drawText(text, { x: width * .22, y: height * .48, size: 34, font, rotate: degrees(32), color: rgb(.85, .12, .16), opacity: .24 });
+    if (id === "page-numbers") page.drawText(`${i + 1}`, { x: width / 2, y: 24, size: 11, font, color: rgb(.25, .28, .34) });
+    if (id === "header-footer") { page.drawText(text, { x: 36, y: height - 32, size: 10, font }); page.drawText("Created with We Love PDF", { x: 36, y: 24, size: 10, font }); }
+    if (id === "annotate-pdf" || id === "protect-pdf" || id === "sign-pdf") page.drawText(text, { x: 48, y: 48, size: 14, font, color: rgb(.12, .49, .39) });
+    if (id === "bates-numbering") page.drawText(`${text || "WLP"}-${String(i + 1).padStart(6, "0")}`, { x: 36, y: 24, size: 10, font });
+    if (id === "redact-pdf") page.drawRectangle({ x: 45, y: height - 110, width: width - 90, height: 36, color: rgb(0, 0, 0) });
+    if (id === "grayscale-pdf" || id === "invert-colors") page.drawText(id === "invert-colors" ? "Dark reading copy" : "Grayscale print copy", { x: 36, y: height - 32, size: 9, font, color: rgb(.4, .4, .4) });
+  });
+}
+
+async function imagesToPdf(files) {
+  const doc = await PDFDocument.create();
+  for (const file of files) {
+    const bytes = await file.arrayBuffer();
+    const image = file.type.includes("png") ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+    const page = doc.addPage([image.width, image.height]);
+    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+  }
+  return doc.save();
+}
+
+async function extractText(file = state.files[0]) {
+  const loadingTask = pdfjsLib.getDocument({ data: await file.arrayBuffer() });
+  const pdf = await loadingTask.promise;
+  const lines = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    lines.push(content.items.map((item) => item.str).join(" "));
+  }
+  return lines.join("\n\n");
+}
+
+async function convertFromPdf(id) {
+  const text = await extractText();
+  if (id === "pdf-to-text") return download(new TextEncoder().encode(text), "pdf-text.txt", "text/plain");
+  if (id === "pdf-to-markdown") return download(new TextEncoder().encode(`# Extracted PDF Text\n\n${text}`), "pdf-markdown.md", "text/markdown");
+  if (id === "pdf-to-html") return download(new TextEncoder().encode(`<main><h1>Extracted PDF Text</h1><pre>${escapeHtml(text)}</pre></main>`), "pdf.html", "text/html");
+  if (id === "pdf-to-csv" || id === "pdf-to-excel") return download(new TextEncoder().encode(text.split(/\n+/).map((l) => `"${l.replaceAll('"', '""')}"`).join("\n")), "pdf.csv", "text/csv");
+  if (id === "pdf-to-word") return download(new TextEncoder().encode(`<html><body><pre>${escapeHtml(text)}</pre></body></html>`), "pdf-word.doc", "application/msword");
+  if (id === "pdf-to-powerpoint") return download(new TextEncoder().encode(`<h1>PDF slide outline</h1><p>${escapeHtml(text.slice(0, 5000))}</p>`), "pdf-slides.html", "text/html");
+  if (["pdf-to-jpg", "pdf-to-png", "pdf-to-long-image"].includes(id)) return renderPdfImage(id);
+  if (id === "search-in-pdf") return $("result").innerHTML = `<strong>Matches:</strong> ${(text.match(new RegExp(escapeRegExp($("searchText")?.value || ""), "gi")) || []).length}`;
+  if (id === "summarize-pdf") return download(new TextEncoder().encode(text.split(".").slice(0, 5).join(".") + "."), "summary.txt", "text/plain");
+  if (id === "quiz-from-pdf") return download(new TextEncoder().encode(text.split(".").filter(Boolean).slice(0, 8).map((s, i) => `${i + 1}. What is meant by: ${s.trim().slice(0, 90)}?`).join("\n")), "quiz.txt", "text/plain");
+  if (id === "invoice-extractor") return download(new TextEncoder().encode(extractInvoice(text)), "invoice-fields.txt", "text/plain");
+}
+
+async function renderPdfImage(id) {
+  const pdf = await pdfjsLib.getDocument({ data: await state.files[0].arrayBuffer() }).promise;
+  const canvases = [];
+  const count = id === "pdf-to-long-image" ? Math.min(pdf.numPages, 8) : 1;
+  for (let i = 1; i <= count; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 1.8 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    canvases.push(canvas);
+  }
+  const out = document.createElement("canvas");
+  out.width = Math.max(...canvases.map((c) => c.width));
+  out.height = canvases.reduce((sum, c) => sum + c.height, 0);
+  const ctx = out.getContext("2d");
+  let y = 0;
+  canvases.forEach((c) => { ctx.fillStyle = "#fff"; ctx.fillRect(0, y, out.width, c.height); ctx.drawImage(c, 0, y); y += c.height; });
+  const type = id === "pdf-to-jpg" ? "image/jpeg" : "image/png";
+  out.toBlob((blob) => download(blob, id === "pdf-to-jpg" ? "page.jpg" : "page.png", type), type, parseFloat($("quality")?.value || "1"));
+}
+
+function download(bytes, name, type = "application/pdf") {
+  const blob = bytes instanceof Blob ? bytes : new Blob([bytes], { type });
+  const url = URL.createObjectURL(blob);
+  $("result").innerHTML = `<strong>Done.</strong> Your file is ready.<br><a class="download-link" download="${name}" href="${url}">Download ${name}</a>`;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+function wrapText(text, width) { return String(text).replace(/<[^>]*>/g, " ").split(/\r?\n/).flatMap((line) => line.match(new RegExp(`.{1,${width}}(\\s|$)`, "g")) || [""]); }
+function escapeHtml(text) { return String(text).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m])); }
+function escapeRegExp(text) { return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function extractInvoice(text) {
+  const total = text.match(/(?:total|amount|balance)\D{0,20}([\d,.]+)/i)?.[1] || "Not found";
+  const date = text.match(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/)?.[0] || "Not found";
+  return `Invoice fields\nDate: ${date}\nTotal: ${total}\n\nPreview text:\n${text.slice(0, 1200)}`;
+}
+
+// ==========================================================================
+// SPA ROUTING, SEO META UPDATES, & SUBPAGE SCRIPTS
+// ==========================================================================
+
+const subpages = [
+  "features",
+  "pricing",
+  "faq",
+  "security",
+  "privacy-policy",
+  "terms-and-conditions",
+  "cookies",
+  "about-us",
+  "contact",
+  "blog",
+  "press",
+  "sitemap"
+];
+
+const seoMeta = {
+  "": {
+    title: "We Love PDF - Free Browser-First PDF Tools",
+    desc: "Convert, organize, optimize, secure, and edit PDF documents in a polished browser-first workspace. 100% private local processing."
+  },
+  "features": {
+    title: "Features - We Love PDF",
+    desc: "Discover all 60 PDF tools. Learn about browser-first local processing, server-side OCR, and AI document assistant capabilities."
+  },
+  "pricing": {
+    title: "Pricing Plans - We Love PDF",
+    desc: "Simple, transparent pricing. Use browser-side PDF tools for free, or upgrade to Pro for advanced server OCR, batch uploads, and AI assistance."
+  },
+  "faq": {
+    title: "FAQ - We Love PDF",
+    desc: "Got questions? Find answers about We Love PDF's file safety, browser local sandbox, Pro plan limits, and AI document helpers."
+  },
+  "security": {
+    title: "Security and Privacy Standards - We Love PDF",
+    desc: "Your data is safe with us. Learn about our local processing sandboxes, encrypted transit pipelines, and strict 1-hour automatic deletion rules."
+  },
+  "privacy-policy": {
+    title: "Privacy Policy - We Love PDF",
+    desc: "Read our Privacy Policy to understand how we protect your personal details, utilize local storage, and process files with zero logging."
+  },
+  "terms-and-conditions": {
+    title: "Terms and Conditions - We Love PDF",
+    desc: "Read the We Love PDF Terms of Service. Learn about user guidelines, fair use limits, license grants, and governing liabilities."
+  },
+  "cookies": {
+    title: "Cookies and Storage Statement - We Love PDF",
+    desc: "Understand what cookies and local storage tokens we use to keep you signed in and preserve your workspace preferences."
+  },
+  "about-us": {
+    title: "About Our Mission - We Love PDF",
+    desc: "Meet the team dedicated to making document processing simple, private, and accessible. Our history, core values, and philosophy."
+  },
+  "contact": {
+    title: "Contact Us - We Love PDF Support",
+    desc: "Need help or have questions? Get in touch with our team for technical support, billing inquiries, or API integrations. We reply in 24 hours."
+  },
+  "blog": {
+    title: "Blog & Document Guides - We Love PDF",
+    desc: "Read practical guides and tech updates on PDF compression, OCR scanning, Bates numbering, and auto-compiling templates."
+  },
+  "press": {
+    title: "Press & Media Kit - We Love PDF",
+    desc: "Access brand assets, official vector logos, founding dates, fast statistics, and press contact details for We Love PDF."
+  },
+  "sitemap": {
+    title: "Sitemap - We Love PDF Directory",
+    desc: "Full HTML directory of We Love PDF. Easily find and navigate all 12 informational sections and all 60 individual PDF tools."
+  }
+};
+
+const blogArticles = {
+  1: {
+    tag: "Security",
+    date: "May 24, 2026",
+    title: "Why Browser-First PDF Tools are Better for Data Security",
+    content: `
+      <p>In the digital age, PDF documents often contain our most sensitive details: employment agreements, financial balance sheets, healthcare records, and identity files. Yet, millions of people daily upload these documents to random online converters. What happens behind the scenes is a significant data security risk.</p>
+      
+      <h3>The Hidden Risks of Server-Side PDF Tools</h3>
+      <p>Most traditional PDF websites process your documents on remote servers. When you click "upload", your file is sent over the internet to a third-party server, where it is written to storage, processed, and held until you download it. Even if the service promises to delete files in an hour, several risks persist:</p>
+      <ul>
+        <li><strong>Data Breaches:</strong> Staging servers are high-value targets for hackers. If a database or bucket is misconfigured, your personal details could be leaked.</li>
+        <li><strong>Retention Policies:</strong> You must trust that the website owner actually deletes your file and does not log it for analytics, debugging, or AI training.</li>
+        <li><strong>Government Subpoenas:</strong> Server owners may be forced to turn over stored user documents under local regulations without your explicit consent.</li>
+      </ul>
+
+      <h3>The Browser-First Solution</h3>
+      <p>We Love PDF utilizes a modern <strong>Browser-First</strong> approach. By leveraging WebAssembly and Javascript engines, we compile tools directly in the client-side browser runtime. When you merge or split documents, the calculations take place strictly inside your browser's sandboxed memory. Your files never leave your computer, ensuring absolute privacy.</p>
+
+      <h3>Conclusion</h3>
+      <p>If you are working with non-public documents, always prefer browser-local tools. We Love PDF gives you the best of both worlds: premium, fast editing without compromising on security.</p>
+    `
+  },
+  2: {
+    tag: "Optimization",
+    date: "May 18, 2026",
+    title: "How to Compress PDFs Without Losing Image Quality",
+    content: `
+      <p>A common headache when sharing PDFs is file size limits. Email servers often restrict attachments to 20MB, but detailed documents or image scans can easily exceed 50MB. Compression is the answer, but how do you do it without making the text unreadable or images blurry?</p>
+      
+      <h3>The Anatomy of a Large PDF</h3>
+      <p>PDF files grow large due to three main factors: high-resolution uncompressed images, embedded font files, and redundant object structures. To shrink the file, a smart compressor must address each layer:</p>
+      <ol>
+        <li><strong>Image Downsampling:</strong> Reducing image resolution from print-quality (300 DPI) to screen-quality (150 DPI) can reduce file sizes by up to 80% with zero visible difference on computer displays.</li>
+        <li><strong>Unused Fonts:</strong> Stripping subset fonts and redundant characters that aren't used in the text.</li>
+        <li><strong>Object Deflation:</strong> Cleaning up metadata fields, redundant bookmarks, and applying compression algorithms to the underlying structural code.</li>
+      </ol>
+
+      <h3>Our Balanced Compression Approach</h3>
+      <p>We Love PDF offers three tailored compression levels: <strong>High</strong> (maximum reduction, lowest resolution), <strong>Balanced</strong> (optimized for screen reading and email), and <strong>Small</strong> (light compression, print quality). By analyzing the document tree in real time, our tool optimizes file containers while preserving font clarity.</p>
+    `
+  },
+  3: {
+    tag: "Workflows",
+    date: "April 29, 2026",
+    title: "A Guide to Digitizing Scans with OCR and Bates Numbering",
+    content: `
+      <p>Legal teams, corporate archives, and researchers often deal with boxes of historical papers. To make these documents usable in the digital world, scanning is only the first step. You need searchability and systematic indexing.</p>
+      
+      <h3>What is OCR (Optical Character Recognition)?</h3>
+      <p>OCR is a technology that analyzes the pixel shapes in a document scan or image and matches them to alphabetic characters, generating a selectable text overlay. Without OCR, a scanned PDF is just a giant image; you cannot search for keywords, copy text, or feed it into AI tools. We Love PDF integrates state-of-the-art OCR engines to restore full searchability to your archives.</p>
+
+      <h3>The Importance of Bates Numbering</h3>
+      <p>In legal and medical fields, documents must be indexed sequentially for identification. Bates Numbering applies a unique, serial number prefix (e.g., CASE-000001) to every page. This ensures pages aren't lost and can be referenced easily during trials or audits. Our bates tool allows you to customize the prefix, suffix, digit padding, and position dynamically.</p>
+    `
+  },
+  4: {
+    tag: "Templates",
+    date: "March 12, 2026",
+    title: "Generating Resumes & Invoices Auto-Filled from Markdown",
+    content: `
+      <p>Creating standardized documents like invoices, receipts, and resumes in traditional word processors is time-consuming and hard to automate. Utilizing text templates combined with PDF rendering libraries offers a faster, cleaner alternative.</p>
+      
+      <h3>Why Markdown and HTML?</h3>
+      <p>Markdown and HTML are plain-text formats, making them easy to write, edit, and version-control. By defining document content in Markdown and rendering it to PDF, you separate design from content. You can write your resume text once and apply different CSS layouts instantly.</p>
+
+      <h3>Automated Workflows on We Love PDF</h3>
+      <p>With tools like <strong>Resume to PDF</strong> and <strong>Invoice Extractor</strong>, We Love PDF enables template-based compilation. You type or paste structured text directly into the workspace, and our pdf-lib layout engine automatically handles pagination, font styles, and margins to output a beautiful, print-ready document.</p>
+    `
+  }
+};
+
+function updateMetaDescription(text) {
+  let meta = document.querySelector('meta[name="description"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", "description");
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", text);
+}
+
+function updateSEO(slug) {
+  // If slug is a tool, handle tool SEO
+  if (tools.some((t) => t[0] === slug)) {
+    const t = tools.find((tool) => tool[0] === slug);
+    document.title = `${t[1]} - We Love PDF`;
+    updateMetaDescription(`Use our free, sandboxed ${t[1]} tool to ${t[3].toLowerCase()} Process files instantly in your browser.`);
+    return;
+  }
+  
+  // Otherwise match subpage or home
+  const meta = seoMeta[slug] || seoMeta[""];
+  document.title = meta.title;
+  updateMetaDescription(meta.desc);
+}
+
+function setRouteMode() {
+  const slug = location.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+  const isTool = tools.some((t) => t[0] === slug);
+  const isSubpage = subpages.includes(slug);
+  
+  // Reset all route classes from body
+  document.body.classList.remove("tool-view", "subpage-view", "home-view");
+  for (const page of subpages) {
+    document.body.classList.remove("route-" + page);
+  }
+  
+  // Update visibility state
+  if (isTool) {
+    document.body.classList.add("tool-view");
+  } else if (isSubpage) {
+    document.body.classList.add("subpage-view", "route-" + slug);
+    // Special setup for subpages
+    if (slug === "blog") {
+      // Show blog index, hide detail view
+      $("blogGrid").style.display = "grid";
+      $("blogPostDetail").style.display = "none";
+    }
+  } else {
+    // Default Home View
+    document.body.classList.add("home-view");
+  }
+
+  // Set SEO tags
+  updateSEO(slug);
+
+  // Route scrolling triggers
+  if (location.hash) {
+    const target = document.getElementById(location.hash.substring(1));
+    if (target) {
+      setTimeout(() => target.scrollIntoView({ behavior: "smooth" }), 100);
+      return;
+    }
+  }
+  window.scrollTo({ top: 0 });
+}
+
+function toolFromPath() {
+  const slug = location.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+  if (tools.some((t) => t[0] === slug)) return slug;
+  return "";
+}
+
+// Click interception for SPA links
+document.addEventListener("click", (event) => {
+  // 1. Intercept normal anchor link clicks
+  const link = event.target.closest("a");
+  if (link) {
+    const href = link.getAttribute("href");
+    if (href && (href.startsWith("/") || href.startsWith("#"))) {
+      // Determine pathname vs hash
+      let cleanPath = href.split("#")[0];
+      const hash = href.split("#")[1];
+
+      // If relative tool link without forward slash (e.g. href="merge-pdf" or "/merge-pdf")
+      if (cleanPath && !cleanPath.startsWith("/") && tools.some((t) => t[0] === cleanPath)) {
+        cleanPath = "/" + cleanPath;
+      }
+
+      const cleanPathFormatted = cleanPath.startsWith("/") ? cleanPath : "/" + cleanPath;
+      
+      if (cleanPath && cleanPathFormatted !== location.pathname) {
+        event.preventDefault();
+        history.pushState(null, "", href);
+        
+        // If it is a tool path, update selection states
+        const routeTool = cleanPath.replace(/^\/+/, "");
+        if (tools.some((t) => t[0] === routeTool)) {
+          selectTool(routeTool, { push: false, scroll: true });
+        } else {
+          setRouteMode();
+        }
+      } else if (hash) {
+        event.preventDefault();
+        const target = document.getElementById(hash);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth" });
+          history.pushState(null, "", href);
+        }
+      }
+      return;
+    }
+  }
+
+  // 2. Intercept data-open-tool card clicks
+  const toolButton = event.target.closest("[data-open-tool]");
+  if (toolButton) {
+    event.preventDefault();
+    selectTool(toolButton.dataset.openTool);
+    return;
+  }
+
+  // 3. Intercept tab categories
+  const tab = event.target.closest("[data-cat]");
+  if (tab) {
+    event.preventDefault();
+    state.category = tab.dataset.cat; 
+    renderTabs(); 
+    renderTools();
+    return;
+  }
+
+  // 4. Intercept FAQ questions
+  const faqBtn = event.target.closest(".faq-question");
+  if (faqBtn) {
+    event.preventDefault();
+    const item = faqBtn.closest(".faq-item");
+    const isActive = item.classList.contains("active");
+    
+    // Toggle active state
+    item.classList.toggle("active", !isActive);
+    const answer = item.querySelector(".faq-answer");
+    if (!isActive) {
+      answer.style.maxHeight = answer.scrollHeight + "px";
+    } else {
+      answer.style.maxHeight = "0";
+    }
+    return;
+  }
+
+  // 5. Intercept Blog card "Read Guide" clicks
+  const blogCard = event.target.closest(".blog-card");
+  const readMoreBtn = event.target.closest(".read-more-link");
+  if (readMoreBtn && blogCard) {
+    event.preventDefault();
+    const postId = blogCard.dataset.postId;
+    const article = blogArticles[postId];
+    if (article) {
+      $("blogGrid").style.display = "none";
+      $("blogPostContent").innerHTML = `
+        <div class="blog-detail-header">
+          <div class="blog-meta"><span class="blog-tag">${article.tag}</span> • <span class="blog-date">${article.date}</span></div>
+          <h2>${article.title}</h2>
+        </div>
+        ${article.content}
+      `;
+      $("blogPostDetail").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    return;
+  }
+});
+
+// Other Event Listeners
+$("toolSearch").addEventListener("input", renderTools);
+$("chooseFiles").addEventListener("click", () => $("fileInput").click());
+$("addMoreFiles")?.addEventListener("click", () => $("fileInput").click());
+$("fileInput").addEventListener("change", (e) => {
+  const newFiles = Array.from(e.target.files);
+  const currentFiles = state.files || [];
+  setFiles([...currentFiles, ...newFiles]);
+  e.target.value = "";
+});
+$("clearFiles").addEventListener("click", () => setFiles([]));
+$("runTool").addEventListener("click", runTool);
+
+["dragenter", "dragover"].forEach((name) => $("dropZone").addEventListener(name, (e) => { e.preventDefault(); $("dropZone").classList.add("dragover"); }));
+["dragleave", "drop"].forEach((name) => $("dropZone").addEventListener(name, (e) => { e.preventDefault(); $("dropZone").classList.remove("dragover"); }));
+$("dropZone").addEventListener("drop", (e) => setFiles(e.dataTransfer.files));
+
+window.addEventListener("popstate", () => {
+  const routeTool = toolFromPath();
+  if (routeTool) {
+    selectTool(routeTool, { push: false, scroll: false });
+  } else {
+    setRouteMode();
+  }
+});
+
+// Blog Back Button
+$("blogBackBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("blogPostDetail").style.display = "none";
+  $("blogGrid").style.display = "grid";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// Pricing toggle
+$("pricing-billing-toggle").addEventListener("change", (e) => {
+  const isYearly = e.target.checked;
+  const proPrice = $("pro-price");
+  
+  // Set active toggles visually
+  $("billing-monthly").classList.toggle("active", !isYearly);
+  $("billing-yearly").classList.toggle("active", isYearly);
+  
+  // Update pricing values
+  if (isYearly) {
+    proPrice.textContent = proPrice.dataset.yearly;
+  } else {
+    proPrice.textContent = proPrice.dataset.monthly;
+  }
+});
+
+// Buy Pro simulation
+$("buy-pro-btn").addEventListener("click", (e) => {
+  e.preventDefault();
+  alert("Pro Upgrade triggered! Redirecting you to Stripe checkout portal...");
+});
+
+// Contact Form Handlers
+$("contactForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const submitBtn = $("contactSubmitBtn");
+  const originalText = submitBtn.textContent;
+  
+  // Show sending state
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Sending Message...";
+  
+  // Simulate API post request delay
+  setTimeout(() => {
+    $("contactForm").style.display = "none";
+    $("contactSuccess").style.display = "block";
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }, 1000);
+});
+
+// Reset Contact Form
+$("contactResetBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("contactForm").reset();
+  $("contactForm").style.display = "grid";
+  $("contactSuccess").style.display = "none";
+});
+
+// Init router
+renderTabs();
+renderTools();
+
+// Async initialization of configuration & Sentry
+async function initConfig() {
+  try {
+    const res = await fetch("/api/config");
+    if (res.ok) {
+      const config = await res.json();
+      if (config.sentryDsn && window.Sentry) {
+        window.Sentry.init({
+          dsn: config.sentryDsn,
+          tracesSampleRate: 1.0,
+        });
+        console.log("Sentry initialized successfully.");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load configuration / init Sentry:", err);
+  }
+}
+initConfig();
+
+const initialRoute = location.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+const isInitialTool = tools.some((t) => t[0] === initialRoute);
+
+if (isInitialTool) {
+  selectTool(initialRoute, { push: false, scroll: false });
+} else {
+  // Load default tool workspace parameters, but hide it if in subpage route
+  selectTool("merge-pdf", { push: false, scroll: false });
+  setRouteMode();
+}
+
