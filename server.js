@@ -27,11 +27,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://browser.sentry-cdn.com", "https://*.sentry-cdn.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://browser.sentry-cdn.com", "https://*.sentry-cdn.com", "https://www.googletagmanager.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "https://translate.googleapis.com", "https://generativelanguage.googleapis.com", "https://*.sentry.io", "https://browser.sentry-cdn.com", "https://*.sentry-cdn.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://www.google-analytics.com"],
+      connectSrc: ["'self'", "https://translate.googleapis.com", "https://generativelanguage.googleapis.com", "https://*.sentry.io", "https://browser.sentry-cdn.com", "https://*.sentry-cdn.com", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://*.analytics.google.com"],
       workerSrc: ["'self'", "blob:", "https://cdn.jsdelivr.net"]
     }
   }
